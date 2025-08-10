@@ -1,0 +1,26 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - gnupg
+
+runcmd:
+  # Install Node.js from NodeSource
+  - curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+  - apt-get install -y nodejs
+  - npm install -g pm2
+
+  # Download the tar file
+  - wget --no-check-certificate 'https://drive.google.com/uc?export=download&id=1Dp8LxWhdqASFf_TdUucdIb0xCDnQTw2o' -O /root/my_api.tar
+
+  # Create and extract
+  - mkdir -p /root/my_api
+  - tar -xf /root/my_api.tar -C /root/my_api
+
+  # Install dependencies
+  - cd /root/my_api && npm install
+
+  # Ensure PM2 uses correct environment for root
+  - export HOME=/root && export PM2_HOME=/root/.pm2 && cd /root/my_api && pm2 start index.js -i max --name my_api_app
+  - export HOME=/root && export PM2_HOME=/root/.pm2 && pm2 save
+  - export HOME=/root && export PM2_HOME=/root/.pm2 && pm2 startup systemd -u root --hp /root
